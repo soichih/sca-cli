@@ -1,11 +1,24 @@
 {
-  "name": "sca-cli",
+  "name": "sca",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "bin": {
+    "sca": "./sca.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "archy": "^1.0.0",
+    "colors": "^1.1.2",
+    "commander": "^2.9.0",
+    "homedir": "^0.6.0",
+    "jsonwebtoken": "^5.7.0",
+    "mkdirp": "^0.5.1",
+    "prompt": "^1.0.0",
+    "request": "^2.70.0"
+  }
 }

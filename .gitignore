@@ -1,0 +1,4 @@
+test.sh
+node_modules
+*.log
+test
