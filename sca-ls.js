@@ -74,28 +74,46 @@ common.load_jwt(function(err, jwt) {
             if(err) throw err;
 
             //just ugly json output
-            console.log(JSON.stringify(workflows, null, 4));
+            //console.log(JSON.stringify(workflows, null, 4));
             
-            //organize workflow into archy-friendly format
-            var org = [];
             for(var workflow_id in workflows) {
-                var org_workflow = {label: workflow_id, nodes: []};
+                var workflow = workflows[workflow_id];
+
+                var workflow_label = "";
+                if(workflow.package.sca) workflow_label += workflow.package.sca.label+" ";
+                if(workflow.package.name) workflow_label += colors.cyan("("+workflow.package.name+") ");
+                //if(workflow.package.description) workflow_label += colors.gray(workflow.package.description+" ");
+                if(workflow.package.version) workflow_label += colors.gray(workflow.package.version);
+                console.log(workflow_label);
+
+                if(workflow.package.author) console.log(workflow.package.author);
+                //organize workflow into archy-friendly format
                 for(var inst_id in workflows[workflow_id].insts) {
-                    var org_inst = {label: "instance:"+inst_id, nodes: []};
+                    var inst = workflows[workflow_id].insts[inst_id];
+                    //var inst_label = "instance:"+inst.config.description;
+                    //var inst_label = "instance:"+inst_id;
+                    var inst_label = colors.gray("instance:")+inst_id;
+                    inst_label += " "+colors.gray(config.home_url+workflow.url+"/#/"+inst_id+"/start");
+                    var org_inst = {label: inst_label, nodes: []};
                     for(var service_id in workflows[workflow_id].insts[inst_id]._services) {
-                        var org_service = {label: "service:"+service_id, nodes: []};
+                        var org_service = {label: colors.gray("service:")+service_id, nodes: []};
                         workflows[workflow_id].insts[inst_id]._services[service_id].forEach(function(task) {
-                            org_service.nodes.push("task:"+task._id+" status: "+task.status);
+                            var status = task.status;
+                            switch(status) {
+                            case "finished": status = colors.green(status); break;
+                            case "running": status = colors.blue(status); break;
+                            case "failed": status = colors.read(status); break
+                            case "failed": status = colors.read(status); break
+                            }
+                            org_service.nodes.push(colors.gray("task:")+task._id+" "+status);
                             //org_service.nodes.push(task);
                         });
                         org_inst.nodes.push(org_service);
                     }
-                    org_workflow.nodes.push(org_inst);
+                    console.log(archy(org_inst));
                 }
-                org.push(org_workflow);
+                //console.log(JSON.stringify(org, null, 4));
             }
-            //console.log(JSON.stringify(org, null, 4));
-            console.log(archy({label: 'workflows', nodes: org}));
         });
         //console.log(JSON.stringify(body, null, 4));
     });

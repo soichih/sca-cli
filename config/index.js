@@ -3,10 +3,12 @@
 //var defaults = require('./defaults');
 var homedir = require('homedir');
 
+exports.home_url = 'https://soichi7.ppa.iu.edu';
+
 //api endpoints
 exports.api = {
-    core: 'https://soichi7.ppa.iu.edu/api/sca',       
-    auth: 'https://soichi7.ppa.iu.edu/api/auth',       
+    core: exports.home_url+'/api/sca',       
+    auth: exports.home_url+'/api/auth',       
 }
 
 exports.path = {
