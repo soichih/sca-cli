@@ -25,6 +25,14 @@ program
 .option('-i --instance <instid>', 'Instance ID to load tasks')
 .parse(process.argv);
 //console.dir(program);
+                    
+function create_workflow_label(workflow)  {
+    var label = "";
+    if(workflow.name) label += colors.cyan(""+workflow.name+":");
+    if(workflow.sca) label += workflow.sca.label+" ";
+    if(workflow.version) label += colors.gray(workflow.version);
+    return label;
+}
 
 common.load_jwt(function(err, jwt) {
     if(err) throw err;
@@ -36,6 +44,7 @@ common.load_jwt(function(err, jwt) {
         if(err) throw err;
         if(res.statusCode != 200) return common.show_error(res, workflows);
 
+        /*
         //find instances that we need to load tasks
         var insts = []; 
         for(var workflow_id in workflows) {
@@ -44,79 +53,94 @@ common.load_jwt(function(err, jwt) {
                 insts.push(workflows[workflow_id].insts[inst_id]);
             }
         }
+        */
 
-        //now load all tasks
-        //console.log(JSON.stringify(workflows, null, 4));
-        async.eachSeries(insts, function(inst, next) {
-            load_tasks(inst._id, function(err, tasks) {
-                if(err) next(err);
-
-                //organize tasks under each services
-                var w_inst = workflows[inst.workflow_id].insts[inst._id];
-                w_inst._services = {};
-                tasks.forEach(function(task) {
-                    if(w_inst._services[task.service_id] === undefined) w_inst._services[task.service_id] = [];
-                    w_inst._services[task.service_id].push(task);
-                });
-                /*
-                tasks.forEach(function(task) {
-                    var inst = data[task._workflow_id].nodes[task.instance_id];
-                    var service = inst.nodes[inst.service_id];
-                    if(inst.nodes[inst.service_id] == undefined) inst.nodes[inst.service_id] = [];
-                    inst.nodes[inst.service_id].push({
-                        label: task._id
-                    });
-                });
-                */
-                next();
-            }); 
-        }, function(err) {
+        load_instances(function(err, instances) {
             if(err) throw err;
+            if(res.statusCode != 200) return common.show_error(res, instances);
 
-            //just ugly json output
-            //console.log(JSON.stringify(workflows, null, 4));
-            
-            for(var workflow_id in workflows) {
-                var workflow = workflows[workflow_id];
-
-                var workflow_label = "";
-                if(workflow.package.sca) workflow_label += workflow.package.sca.label+" ";
-                if(workflow.package.name) workflow_label += colors.cyan("("+workflow.package.name+") ");
-                //if(workflow.package.description) workflow_label += colors.gray(workflow.package.description+" ");
-                if(workflow.package.version) workflow_label += colors.gray(workflow.package.version);
-                console.log(workflow_label);
-
-                if(workflow.package.author) console.log(workflow.package.author);
-                //organize workflow into archy-friendly format
-                for(var inst_id in workflows[workflow_id].insts) {
-                    var inst = workflows[workflow_id].insts[inst_id];
-                    //var inst_label = "instance:"+inst.config.description;
-                    //var inst_label = "instance:"+inst_id;
-                    var inst_label = colors.gray("instance:")+inst_id;
-                    inst_label += " "+colors.gray(config.home_url+workflow.url+"/#/"+inst_id+"/start");
-                    var org_inst = {label: inst_label, nodes: []};
-                    for(var service_id in workflows[workflow_id].insts[inst_id]._services) {
-                        var org_service = {label: colors.gray("service:")+service_id, nodes: []};
-                        workflows[workflow_id].insts[inst_id]._services[service_id].forEach(function(task) {
-                            var status = task.status;
-                            switch(status) {
-                            case "finished": status = colors.green(status); break;
-                            case "running": status = colors.blue(status); break;
-                            case "failed": status = colors.read(status); break
-                            case "failed": status = colors.read(status); break
-                            }
-                            org_service.nodes.push(colors.gray("task:")+task._id+" "+status);
-                            //org_service.nodes.push(task);
-                        });
-                        org_inst.nodes.push(org_service);
-                    }
-                    console.log(archy(org_inst));
+            //now load tasks for each instances
+            //TODO - I should limit number of tasks to load (maybe the most recent?)
+            async.eachSeries(instances, function(inst, next) {
+                inst._services = {};
+                load_tasks(inst._id, function(err, tasks) {
+                    if(err) next(err);
+                    //organize tasks under each services
+                    tasks.forEach(function(task) {
+                        if(inst._services[task.service_id] === undefined) inst._services[task.service_id] = [];
+                        inst._services[task.service_id].push(task);
+                    });
+                    next();
+                }); 
+            }, function(err) {
+                if(err) throw err;
+        
+                //create _instances list to add instances
+                for(var workflow_id in workflows) {
+                    workflows[workflow_id]._instances = [];
                 }
-                //console.log(JSON.stringify(org, null, 4));
-            }
+                //then group tasks under separate workflows
+                instances.forEach(function(instance) {
+                    workflows[instance.workflow_id]._instances.push(instance);
+                });
+
+                for(var workflow_id in workflows) {
+                    var workflow = workflows[workflow_id];
+                    if(workflow._instances.length == 0) continue;
+                    console.log(create_workflow_label(workflow));
+                    
+                    //organize workflow into archy-friendly format
+                    workflow._instances.forEach(function(instance) {
+                        //if(instance.workflow_id != workflow_id) return;
+                        var inst_label = colors.gray("instance:")+instance._id;
+                        inst_label += " "+colors.gray(config.home_url+workflow.url+"/#/"+instance._id+"/start");
+                        var org_inst = {label: inst_label, nodes: []};
+                        for(var service_id in instance._services) {
+                            var org_service = {label: service_id/*+colors.gray(" service")*/, nodes: []};
+                            instance._services[service_id].forEach(function(task) {
+                                var status = task.status;
+                                switch(status) {
+                                    case "finished": status = colors.gray(status); break;
+                                    case "running": status = colors.green(status); break;
+                                    case "failed": status = colors.red(status); break
+                                    case "stopped": status = colors.yellow(status); break
+                                    default: status = colors.blue(status);
+                                }
+                                var dates = "created at "+task.create_date;
+                                var deps = "";
+                                if(task.deps.length) {
+                                    var deps = colors.gray(" dep:");
+                                    task.deps.forEach(function(dep) {
+                                        deps+=dep+" "; 
+                                    });
+                                }
+                                var task_label = colors.gray("task:")+task._id+" "+status+deps+"\n"+dates;
+                                org_service.nodes.push(task_label);
+                                //org_service.nodes.push(task);
+                            });
+                            org_inst.nodes.push(org_service);
+                        }
+                        console.log(archy(org_inst));
+                    });
+                    //console.log(JSON.stringify(org, null, 4));
+                }
+            });
         });
         //console.log(JSON.stringify(body, null, 4));
     });
+
+    function load_instances(cb) {
+        //load user instances
+        request.get({
+            url: config.api.core+"/instance", 
+            json: true, 
+            headers: {'Authorization': 'Bearer '+jwt}
+        }, function(err, res, instances) {
+            if(err) return cb(err);
+            if(res.statusCode != 200) return common.show_error(res, instances);
+            cb(null, instances);
+        });
+    }
 
     function load_tasks(instance_id, cb) {
         request.get({
@@ -125,12 +149,11 @@ common.load_jwt(function(err, jwt) {
             qs: {where: JSON.stringify({instance_id: instance_id})},
             headers: { 'Authorization': 'Bearer '+jwt }
         }, function(err, res, tasks) {
-            if(err) throw err;
+            if(err) return cb(err);
             if(res.statusCode != 200) return common.show_error(res, tasks);
             cb(null, tasks);
         });
     }
-
 });
 
 

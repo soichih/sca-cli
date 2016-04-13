@@ -18,14 +18,14 @@ var config = require('./config');
 var common = require('./common');
 
 program
-.arguments('<src> <dest>')
-.action(function(src, dest, env) {
+.arguments('<task_id> <dest_resource_id>')
+.action(function(task_id, dest_resource_id, env) {
     common.load_jwt(function(err, jwt) {
         if(err) throw err;
         request.post({
             url: config.api.core+"/resource/transfer", 
             json: true,
-            form: {task_id: "57070fe139b1a0103ec2a86b", dest_resource_id: "56f54d88469691f86d5ceab3"}, //freesurfer@karst to osgxd
+            form: {task_id: task_id, dest_resource_id: dest_resource_id}, //freesurfer@karst to osgxd
             headers: { 'Authorization': 'Bearer '+jwt }
         }, function(err, res, body) {
             if(err) throw err;
