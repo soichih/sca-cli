@@ -1,6 +1,6 @@
 {
   "name": "sca",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "index.js",
   "bin": {
@@ -15,11 +15,13 @@
     "archy": "^1.0.0",
     "colors": "^1.1.2",
     "commander": "^2.9.0",
+    "fstream": "^1.0.8",
     "homedir": "^0.6.0",
     "jsonwebtoken": "^5.7.0",
     "mkdirp": "^0.5.1",
     "prompt": "^1.0.0",
     "request": "^2.70.0",
+    "single-line-log": "^1.1.1",
     "tar-fs": "^1.12.0"
   }
 }

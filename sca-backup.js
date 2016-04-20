@@ -17,6 +17,7 @@ var jwt = require('jsonwebtoken');
 var fstream = require('fstream');
 var tar = require('tar-fs');
 //var tar = require('tar'); //x2 slower than tar-fs
+var plog = require('single-line-log').stdout;
 
 //mine
 var config = require('./config');
@@ -29,10 +30,10 @@ program
     .action(action_create);
 
 program
-    .command('search [query]')
+    .command('ls [query]')
     .option('-v, --verbose', 'show a bit more info for each entries')
     .description('query list of sda backups')
-    .action(action_search);
+    .action(action_ls);
 
 program
     .command('restore <taskid>')
@@ -102,8 +103,6 @@ function action_create(dir, desc) {
             if(err) throw err;
             //TODO - handle a case where user doesn't have any hpss resource
             var best_resource = ret.resource;
-            console.log("best resource to run hpss: ");
-            console.dir(best_ressource);
 
             //create unique name
             var tgzname = Date.now()+".tar";//.gz";
@@ -145,15 +144,20 @@ function action_create(dir, desc) {
                         }
                     },
                     headers: auth_headers,
-                }, function(err, res, task) {
+                }, function(err, res, body) {
                     if(err) throw err;
-                    console.dir(task);
+                    console.log("Date uploaded and archiving.. (you can kill this script now)");
+                    wait_task(body.task, function(err) {
+                        if(err) throw err;
+                        console.log("Archived! You can restore the content by running $ sca backup restore "+body.task._id);
+                    });
                 }); 
             });
             
             //now start streaming!
             //console.log("uploading.. "+colors.gray("to resource:"+best_resource._id));
-            console.log("uploading.. ");
+            //console.log("best resource to run hpss: "+best_resource.name);
+            console.log("tarring and uploading to "+best_resource.name+" ...");
             /*
             //node-tar is 2x slower than tar-fs
             fstream.Reader({path: dir, type: "Directory"})
@@ -180,7 +184,7 @@ function create_zip(dir, tarfilename, cb) {
 }
 */
 
-function action_search(query, options) {
+function action_ls(query, options) {
     //console.dir(query);
     //console.log(config.api.core);
     get_backup_instance(function(err, instance) {
@@ -247,6 +251,7 @@ function action_restore(taskid) {
               type: 'application/x-tar',
               size: 353010176 }
             */
+            console.log("requesting hpss-get on "+file.path+" ("+common.formatsize(file.size)+")");
 
             //*thaw request*
             request.post({
@@ -268,13 +273,49 @@ function action_restore(taskid) {
                     }
                 },
                 headers: auth_headers,
-            }, function(err, res, task) {
+            }, function(err, res, body) {
                 if(err) throw err;
-                console.dir(task);
+                //console.dir(body.message);
+                wait_task(body.task, function(err) {
+                    if(err) throw err;
+                    //now stream the tar
+                    //console.dir(task.config);
+                    var dirname = path.basename(task.config.info.path)+"."+taskid;
+                    console.log("downloading.. and unpacking content to "+dirname);
+                    request.get({
+                        url: config.api.core+"/resource/download",
+                        json: true,
+                        qs: {r: task.resource_id, p: instance._id+"/_thaw/"+path.basename(file.path)},
+                        headers: auth_headers,
+                    }).pipe(tar.extract(dirname))
+                });
             }); 
         });
-
-        //request for thawing
     });     
 }
 
+function wait_task(task, cb) {
+    console.log(colors.cyan(config.progress_url+"#/detail/"+task.progress_key));
+    //console.dir(task);
+    function check_status() {
+        //console.log(config.api.progress+"/status/"+task.progress_key);
+        request.get({
+            url: config.api.progress+"/status/"+task.progress_key,
+            json: true,
+        }, function(err, res, progress){
+            if(err) throw err;
+            //console.dir(progress); 
+            if(progress.status) {
+                plog(common.color_status(progress.status)+" "+colors.gray(progress.progress*100+"%")+" "+progress.msg);
+                if(progress.status == "failed") cb("thawing failed");
+                if(progress.status == "finished") {
+                    console.log(""); //newline
+                    return cb();
+                }
+            }
+            //all else.. reload
+            setTimeout(check_status, 1000);
+        });
+    }
+    check_status();
+}
