@@ -81,7 +81,11 @@ common.load_jwt(function(err, jwt) {
                 }
                 //then group tasks under separate workflows
                 instances.forEach(function(instance) {
-                    workflows[instance.workflow_id]._instances.push(instance);
+                    var wf = workflows[instance.workflow_id];
+                    if(wf) wf._instances.push(instance);
+                    else {
+                        console.log(colors.gray("unknown workflow id:"+instance.workflow_id));
+                    } 
                 });
 
                 for(var workflow_id in workflows) {
@@ -93,19 +97,12 @@ common.load_jwt(function(err, jwt) {
                     workflow._instances.forEach(function(instance) {
                         //if(instance.workflow_id != workflow_id) return;
                         var inst_label = colors.gray("instance:")+instance._id;
-                        inst_label += " "+colors.gray(config.home_url+workflow.url+"/#/"+instance._id+"/start");
+                        inst_label += " "+colors.gray(config.home_url+workflow.url+"/#/start/"+instance._id);
                         var org_inst = {label: inst_label, nodes: []};
                         for(var service_id in instance._services) {
                             var org_service = {label: service_id/*+colors.gray(" service")*/, nodes: []};
                             instance._services[service_id].forEach(function(task) {
-                                var status = task.status;
-                                switch(status) {
-                                    case "finished": status = colors.gray(status); break;
-                                    case "running": status = colors.green(status); break;
-                                    case "failed": status = colors.red(status); break
-                                    case "stopped": status = colors.yellow(status); break
-                                    default: status = colors.blue(status);
-                                }
+                                var status = common.color_status(task.status);
                                 var dates = "created at "+task.create_date;
                                 var deps = "";
                                 if(task.deps.length) {
@@ -144,7 +141,7 @@ common.load_jwt(function(err, jwt) {
 
     function load_tasks(instance_id, cb) {
         request.get({
-            url: config.api.core+"/task/query", 
+            url: config.api.core+"/task", 
             json: true,
             qs: {where: JSON.stringify({instance_id: instance_id})},
             headers: { 'Authorization': 'Bearer '+jwt }

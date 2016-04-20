@@ -25,7 +25,7 @@ program
         request.post({
             url: config.api.core+"/resource/transfer", 
             json: true,
-            form: {task_id: task_id, dest_resource_id: dest_resource_id}, //freesurfer@karst to osgxd
+            body: {task_id: task_id, dest_resource_id: dest_resource_id}, //freesurfer@karst to osgxd
             headers: { 'Authorization': 'Bearer '+jwt }
         }, function(err, res, body) {
             if(err) throw err;
@@ -39,21 +39,3 @@ program
 //TODO - I need to handle a case when user doesn't specify any command (process.argv.length == 2?)
 program.parse(process.argv);
 
-/*
-function action_ls(env) {
-    common.load_jwt(function(err, jwt) {
-        if(err) throw err;
-        //console.log(config.api.core);
-        request.get({
-            url: config.api.core+"/resource", 
-            json: true,
-            headers: { 'Authorization': 'Bearer '+jwt }
-        }, function(err, res, body) {
-            if(err) throw err;
-            if(res.statusCode != 200) return common.show_error(res, body);
-
-            console.log(JSON.stringify(body, null, 4));
-        });
-    });
-}
-*/

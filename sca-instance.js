@@ -22,6 +22,11 @@ program
     .description('list your workflow instances')
     .action(action_ls);
 
+if(!process.argv.slice(2).length) {
+    program.outputHelp(function(t) { return colors.red(t)});
+    process.exit(1);
+}
+
 //TODO - I need to handle a case when user doesn't specify any command (process.argv.length == 2?)
 program.parse(process.argv);
 

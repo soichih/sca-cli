@@ -53,7 +53,7 @@ function dorequest() {
     request.post({
         url: config.api.auth+"/local/auth", 
         json: true,
-        form: {username: program.username, password: program.password}
+        body: {username: program.username, password: program.password}
     }, function(err, res, body) {
         if(err) throw err;
         if(res.statusCode != 200) return common.show_error(res, body);
