@@ -43,9 +43,12 @@ program
   .command('resource', 'List / manipulate your SCA resources')
   .command('workflow', 'List SCA workflows')
   .command('instance', 'List / manipulate your SCA workflow instances')
-  .command('ls', 'List all workflow instances and tasks underneath')
+  .command('task', 'List / manipuate your SCA tasks')
   .command('cp', 'Transfer data in/out of your SCA workflow instances')
   .command('backup', 'SCA showcase sda backup tool')
   //.command('list', 'list packages installed', {isDefault: true})
-  .parse(process.argv);
+
+//TODO - handle a case user provide command not listed
+
+program.parse(process.argv);
 

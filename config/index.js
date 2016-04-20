@@ -14,3 +14,7 @@ exports.api = {
 exports.path = {
     cli_jwt: homedir()+'/.sca/keys/cli.jwt', //place to store access token
 }
+
+exports.backup = {
+    hpssdir: 'backup', //directory to store backup data
+}

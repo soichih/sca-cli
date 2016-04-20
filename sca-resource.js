@@ -22,23 +22,28 @@ program
     .description('list all resource you have access to')
     .action(action_ls);
 
-//TODO - I need to handle a case when user doesn't specify any command (process.argv.length == 2?)
+if(!process.argv.slice(2).length) {
+    program.outputHelp(function(t) { return colors.red(t)});
+    process.exit(1);
+}
 
-program.parse(process.argv);
+var jwt;
+common.load_jwt(function(err, _jwt) {
+    if(err) throw err;
+    jwt = _jwt;
+    program.parse(process.argv);
+});
 
 function action_ls(env) {
-    common.load_jwt(function(err, jwt) {
+    //console.log(config.api.core);
+    request.get({
+        url: config.api.core+"/resource", 
+        json: true,
+        headers: { 'Authorization': 'Bearer '+jwt }
+    }, function(err, res, body) {
         if(err) throw err;
-        //console.log(config.api.core);
-        request.get({
-            url: config.api.core+"/resource", 
-            json: true,
-            headers: { 'Authorization': 'Bearer '+jwt }
-        }, function(err, res, body) {
-            if(err) throw err;
-            if(res.statusCode != 200) return common.show_error(res, body);
+        if(res.statusCode != 200) return common.show_error(res, body);
 
-            console.log(JSON.stringify(body, null, 4));
-        });
+        console.log(JSON.stringify(body, null, 4));
     });
 }

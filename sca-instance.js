@@ -38,10 +38,12 @@ function action_ls(env) {
             url: config.api.core+"/instance", 
             json: true,
             headers: { 'Authorization': 'Bearer '+jwt }
-        }, function(err, res, body) {
+        }, function(err, res, instances) {
             if(err) throw err;
-            if(res.statusCode != 200) return common.show_error(res, body);
-            console.log(JSON.stringify(body, null, 4));
+            if(res.statusCode != 200) return common.show_error(res, instances);
+            instances.forEach(function(instance) {
+                console.log(colors.gray(instance._id)+" "+instance.create_date+" "+instance.workflow_id+" "+colors.underline(colors.green(instance.name))+" "+colors.green(instance.desc));
+            });
         });
     });
 }

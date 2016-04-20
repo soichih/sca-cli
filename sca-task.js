@@ -19,23 +19,77 @@ var archy = require('archy');
 var config = require('./config');
 var common = require('./common');
 
-//list requested tasks for each workflow instances
+program
+    .command('show <taskid>')
+    .description('display details about a task')
+    .action(command_show);
 
 program
-.option('-i --instance <instid>', 'Instance ID to load tasks')
-.parse(process.argv);
-//console.dir(program);
-                    
-function create_workflow_label(workflow)  {
-    var label = "";
-    if(workflow.name) label += colors.cyan(""+workflow.name+":");
-    if(workflow.sca) label += workflow.sca.label+" ";
-    if(workflow.version) label += colors.gray(workflow.version);
-    return label;
+    .command('rerun <taskid>')
+    .description('rerun a finished / failed task')
+    .action(command_rerun);
+
+program
+    .command('stop <taskid>')
+    .description('stop a running task')
+    .action(command_stop);
+
+program
+    .command('ls')
+    .option('-i --instance <instid>', 'Instance ID to limit tasks')
+    .description('list tasks')
+    .action(command_ls)
+ 
+if(!process.argv.slice(2).length) {
+    program.outputHelp(function(t) { return colors.red(t)});
+    process.exit(1);
 }
 
-common.load_jwt(function(err, jwt) {
+var jwt;
+common.load_jwt(function(err, _jwt) {
     if(err) throw err;
+    jwt = _jwt;
+    program.parse(process.argv);
+});
+
+function command_show(taskid) {
+    request.get({
+        url: config.api.core+"/task", 
+        json: true,
+        qs: {where: JSON.stringify({_id: taskid})},
+        headers: { 'Authorization': 'Bearer '+jwt }
+    }, function(err, res, body) {
+        if(err) throw err;
+        if(res.statusCode != 200) return common.show_error(res, body);
+        console.log(JSON.stringify(body, null, 4));
+    });
+}
+
+function command_rerun(taskid) {
+    request.put({
+        url: config.api.core+"/task/rerun/"+taskid, 
+        json: true,
+        headers: { 'Authorization': 'Bearer '+jwt }
+    }, function(err, res, body) {
+        if(err) throw err;
+        if(res.statusCode != 200) return common.show_error(res, body);
+        console.log(JSON.stringify(body, null, 4));
+    });
+}
+
+function command_stop(taskid) {
+    request.put({
+        url: config.api.core+"/task/stop/"+taskid, 
+        json: true,
+        headers: { 'Authorization': 'Bearer '+jwt }
+    }, function(err, res, body) {
+        if(err) throw err;
+        if(res.statusCode != 200) return common.show_error(res, body);
+        console.log(JSON.stringify(body, null, 4));
+    });
+}
+
+function command_ls(options) {
     request.get({
         url: config.api.core+"/workflow", 
         json: true,
@@ -43,17 +97,6 @@ common.load_jwt(function(err, jwt) {
     }, function(err, res, workflows) {
         if(err) throw err;
         if(res.statusCode != 200) return common.show_error(res, workflows);
-
-        /*
-        //find instances that we need to load tasks
-        var insts = []; 
-        for(var workflow_id in workflows) {
-            for(var inst_id in workflows[workflow_id].insts) {
-                //workflows[workflow_id].insts[inst_id]._workflow_id = workflow_id;//helps to organize things later
-                insts.push(workflows[workflow_id].insts[inst_id]);
-            }
-        }
-        */
 
         load_instances(function(err, instances) {
             if(err) throw err;
@@ -91,7 +134,7 @@ common.load_jwt(function(err, jwt) {
                 for(var workflow_id in workflows) {
                     var workflow = workflows[workflow_id];
                     if(workflow._instances.length == 0) continue;
-                    console.log(create_workflow_label(workflow));
+                    console.log(common.color_workflow(workflow));
                     
                     //organize workflow into archy-friendly format
                     workflow._instances.forEach(function(instance) {
@@ -151,6 +194,4 @@ common.load_jwt(function(err, jwt) {
             cb(null, tasks);
         });
     }
-});
-
-
+}

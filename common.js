@@ -9,6 +9,22 @@ var colors = require('colors/safe');
 //mine
 var config = require('./config');
 
+/*
+String.prototype.pad= function (paddingValue) {
+   return String(paddingValue + this).slice(-paddingValue.length);
+};
+*/
+
+exports.pad = function(string, width, padding) { 
+    //if(string === undefined) string = "";
+    if(typeof string != String) string = new String(string);
+    if(padding === undefined) padding = " ";
+    while(string.length < width) {
+        string = padding+string;
+    }
+    return string;
+}
+
 exports.show_error = function(res, body) {
     console.error(res.statusCode);
     console.log(JSON.stringify(body, null, 4));
@@ -27,11 +43,30 @@ exports.load_jwt = function(cb) {
 };
 
 exports.color_status = function(status) {
-    switch(status) {
+    switch(status.trim()) {
         case "finished": return colors.cyan(status);
         case "running": return colors.green(status);
         case "failed": return colors.red(status);
         case "stopped": return colors.yellow(status);
+        case "requested": return colors.blue(status);
     }
     return colors.gray(status);
+}
+
+exports.color_workflow = function(workflow) {
+    var label = "";
+    if(workflow.name) label += colors.cyan(""+workflow.name+":");
+    if(workflow.sca) label += workflow.sca.label+" ";
+    if(workflow.version) label += colors.gray(workflow.version);
+    return label;
+}
+
+exports.formatsize = function(bytes) {
+    if      (bytes>=1000000000) {bytes=(bytes/1000000000).toFixed(2)+' GB';}
+    else if (bytes>=1000000)    {bytes=(bytes/1000000).toFixed(2)+' MB';}
+    else if (bytes>=1000)       {bytes=(bytes/1000).toFixed(2)+' KB';}
+    else if (bytes>1)           {bytes=bytes+' bytes';}
+    else if (bytes==1)          {bytes=bytes+' byte';}
+    else                        {bytes='0 byte';}
+    return bytes;
 }
