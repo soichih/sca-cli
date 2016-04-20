@@ -1,6 +1,6 @@
 {
   "name": "sca",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "",
   "main": "index.js",
   "bin": {
@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "archy": "^1.0.0",
+    "async": "^1.5.2",
     "colors": "^1.1.2",
     "commander": "^2.9.0",
     "fstream": "^1.0.8",
