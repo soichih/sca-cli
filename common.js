@@ -38,7 +38,12 @@ exports.load_jwt = function(cb) {
         fs.readFile(config.path.cli_jwt, {encoding: 'ascii'}, function(err, data) {
             if(err) return cb("Can't open SCA access token. Please check file permission for "+config.path.cli_jwt);
             var token = jwt.decode(data);
-            if(token.exp > Date.now()) return cb("Your SCA acces token has expired. Please re-login.");
+            //console.log(token.exp);
+            //console.log(Date.now()/1000);
+            if(token.exp < Date.now()/1000) {
+                console.error("Your SCA token has expired. Please re-run $ sca login");
+                process.exit(1);
+            }
             cb(null, data);
         });
     });

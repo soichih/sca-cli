@@ -61,7 +61,7 @@ function get_backup_instance(cb) {
         qs: {where: JSON.stringify({workflow_id: 'sca-wf-backup'})},
     }, function(err, res, body) {
         if(err) return cb(err);
-        if(res.statusCode != 200) return cb("failed to query for sca-wf-backup");
+        if(res.statusCode != 200) return cb("failed to query for sca-wf-backup\n"+JSON.stringify(body));
         if(body.length == 0) {
             
             //user doesn't have sca-wf-backup yet. need to create one 
