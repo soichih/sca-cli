@@ -38,7 +38,11 @@ program
     .command('ls')
     .option('-i --instance <instid>', 'Instance ID to limit tasks')
     .description('list tasks')
-    .action(command_ls)
+    .action(command_ls);
+
+program
+    .command('stage <instance_id> <task_id> <resource_id>')
+    .action(command_stage);
  
 if(!process.argv.slice(2).length) {
     program.outputHelp(function(t) { return colors.red(t)});
@@ -194,4 +198,27 @@ function command_ls(options) {
             cb(null, tasks);
         });
     }
+}
+
+function command_stage(instid, taskid, resourceid) {
+    //submit noop request with dep set to the task to stage the taskid on resourceid
+    request.post({
+        url: config.api.core+"/task",
+        json: true,
+        body: {
+            instance_id: instid,
+            resource_id: resourceid, //resource id to run (this is suggestion, but score for noop for all resource should be 0)
+            service_id: 'sca-service-noop',
+            name: 'stage',
+            config: {}, //noop!
+            deps: [taskid], //here is the most important bit
+        },
+        headers: { 'Authorization': 'Bearer '+jwt }
+    }, function(err, res, body) {
+        if(err) throw err;
+        common.wait_task(body.task, function(err) {
+            if(err) throw err;
+            console.log("completed");
+        });
+    }); 
 }

@@ -147,7 +147,7 @@ function action_create(dir, desc) {
                 }, function(err, res, body) {
                     if(err) throw err;
                     console.log("Date uploaded and archiving.. (you can kill this script now)");
-                    wait_task(body.task, function(err) {
+                    common.wait_task(body.task, function(err) {
                         if(err) throw err;
                         console.log("Archived! You can restore the content by running $ sca backup restore "+body.task._id);
                     });
@@ -276,7 +276,7 @@ function action_restore(taskid) {
             }, function(err, res, body) {
                 if(err) throw err;
                 //console.dir(body.message);
-                wait_task(body.task, function(err) {
+                common.wait_task(body.task, function(err) {
                     if(err) throw err;
                     //now stream the tar
                     //console.dir(task.config);
@@ -294,28 +294,3 @@ function action_restore(taskid) {
     });     
 }
 
-function wait_task(task, cb) {
-    console.log(colors.cyan(config.progress_url+"#/detail/"+task.progress_key));
-    //console.dir(task);
-    function check_status() {
-        //console.log(config.api.progress+"/status/"+task.progress_key);
-        request.get({
-            url: config.api.progress+"/status/"+task.progress_key,
-            json: true,
-        }, function(err, res, progress){
-            if(err) throw err;
-            //console.dir(progress); 
-            if(progress.status) {
-                plog(common.color_status(progress.status)+" "+colors.gray(progress.progress*100+"%")+" "+progress.msg);
-                if(progress.status == "failed") cb("thawing failed");
-                if(progress.status == "finished") {
-                    console.log(""); //newline
-                    return cb();
-                }
-            }
-            //all else.. reload
-            setTimeout(check_status, 1000);
-        });
-    }
-    check_status();
-}
