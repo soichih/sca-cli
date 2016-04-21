@@ -94,6 +94,7 @@ function command_stop(taskid) {
 }
 
 function command_ls(options) {
+    //first load workflow info..
     request.get({
         url: config.api.core+"/workflow", 
         json: true,
@@ -102,7 +103,8 @@ function command_ls(options) {
         if(err) throw err;
         if(res.statusCode != 200) return common.show_error(res, workflows);
 
-        load_instances(function(err, instances) {
+        //then load all instances
+        load_instances(options, function(err, instances) {
             if(err) throw err;
             if(res.statusCode != 200) return common.show_error(res, instances);
 
@@ -173,11 +175,16 @@ function command_ls(options) {
         //console.log(JSON.stringify(body, null, 4));
     });
 
-    function load_instances(cb) {
+    function load_instances(options, cb) {
         //load user instances
+        var where = {};
+        if(options.instance) {
+            where._id = options.instance;
+        }
         request.get({
             url: config.api.core+"/instance", 
             json: true, 
+            qs: {where: JSON.stringify(where)},
             headers: {'Authorization': 'Bearer '+jwt}
         }, function(err, res, instances) {
             if(err) return cb(err);
