@@ -90,7 +90,9 @@ exports.wait_task = function(task, cb) {
             if(err) throw err;
             //console.dir(progress); 
             if(progress.status) {
-                plog(exports.color_status(progress.status)+" "+colors.gray(progress.progress*100+"%")+" "+progress.msg);
+                var per = "";
+                if(progress.progress) per = " "+colors.gray(progress.progress*100+"%");
+                plog(exports.color_status(progress.status)+per+" "+progress.msg);
                 if(progress.status == "failed") cb("thawing failed");
                 if(progress.status == "finished") {
                     console.log(""); //newline

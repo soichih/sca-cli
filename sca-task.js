@@ -214,11 +214,11 @@ function command_stage(instid, taskid, resourceid) {
         json: true,
         body: {
             instance_id: instid,
-            resource_id: resourceid, //resource id to run (this is suggestion, but score for noop for all resource should be 0)
+            preferred_resource_id: resourceid, //resource id to run (this is suggestion, but score for noop for all resource should be 0)
             service_id: 'sca-service-noop',
             name: 'stage',
-            config: {}, //noop!
-            deps: [taskid], //here is the most important bit
+            //config: {}, //noop doesn't need any config
+            deps: [taskid], //here is the most important bit..
         },
         headers: { 'Authorization': 'Bearer '+jwt }
     }, function(err, res, body) {

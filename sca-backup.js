@@ -185,17 +185,13 @@ function create_zip(dir, tarfilename, cb) {
 */
 
 function action_ls(query, options) {
-    //console.dir(query);
-    //console.log(config.api.core);
     get_backup_instance(function(err, instance) {
         if(err) throw err; 
-        //console.dir(instance);
         var where = {
             instance_id: instance._id,
             name: "sca-backup",
         };
         if(query) where.$text = {$search: query};
-        //console.dir(where);
         
         //now search for tasks
         request.get({
@@ -207,7 +203,6 @@ function action_ls(query, options) {
             if(err) return cb(err);
             tasks.forEach(function(task) {
                 var status = common.color_status(common.pad(task.status, 15));
-                //var taskid = colors.bgBlue(task._id);
                 var taskid = colors.gray(task._id);
                 var size = "";
                 if(task.products && task.products[0]) {
@@ -216,12 +211,9 @@ function action_ls(query, options) {
                     var path = colors.gray(file.path);
                 }
                 size = common.pad(size, 20);
-                //console.log(taskid+" "+task.create_date+" "+status+" "+path+" ("+size+" bytes)");
-                //console.log(colors.green(task.desc));
                 console.log(taskid+" "+status+" "+task.create_date+" ("+common.formatsize(size)+") "+colors.green(task.desc));
                 if(options.verbose) {
                     if(task.config.info) console.dir(task.config.info);
-                    //console.log(JSON.stringify(task, null, 4));
                 }
             });
         }); 
@@ -229,7 +221,6 @@ function action_ls(query, options) {
 }
 
 function action_restore(taskid) {
-    //console.log("taskid:"+taskid);
     get_backup_instance(function(err, instance) {
         if(err) throw err; 
 
@@ -245,12 +236,6 @@ function action_restore(taskid) {
             if(body.length == 0) throw new Error("couldn't find the task:"+taskid);
             var task = body[0];
             var file = task.products[0].files[0];
-            //console.dir(file);
-            /*
-            { path: 'backup/1461170279579.tar',
-              type: 'application/x-tar',
-              size: 353010176 }
-            */
             console.log("requesting hpss-get on "+file.path+" ("+common.formatsize(file.size)+")");
 
             //*thaw request*
