@@ -44,6 +44,7 @@ program
   .command('workflow', 'List SCA workflows')
   .command('instance', 'List / manipulate your SCA workflow instances')
   .command('task', 'List / manipuate your SCA tasks')
+  .command('service', 'Query / register SCA services')
   .command('backup', 'SCA showcase sda backup tool')
   //.command('list', 'list packages installed', {isDefault: true})
 

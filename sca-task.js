@@ -35,6 +35,12 @@ program
     .action(command_stop);
 
 program
+    .command('submit <instid> <service>')
+    .option('-c --config <config>', 'Config to pass to the task')
+    .description('submit a service')
+    .action(command_submit);
+
+program
     .command('ls')
     .option('-i --instance <instid>', 'Instance ID to limit tasks')
     .description('list tasks')
@@ -116,8 +122,8 @@ function command_ls(options) {
                     if(err) next(err);
                     //organize tasks under each services
                     tasks.forEach(function(task) {
-                        if(inst._services[task.service_id] === undefined) inst._services[task.service_id] = [];
-                        inst._services[task.service_id].push(task);
+                        if(inst._services[task.service] === undefined) inst._services[task.service] = [];
+                        inst._services[task.service].push(task);
                     });
                     next();
                 }); 
@@ -148,9 +154,9 @@ function command_ls(options) {
                         var inst_label = colors.gray("instance:")+instance._id;
                         inst_label += " "+colors.gray(config.home_url+workflow.url+"/#/start/"+instance._id);
                         var org_inst = {label: inst_label, nodes: []};
-                        for(var service_id in instance._services) {
-                            var org_service = {label: service_id/*+colors.gray(" service")*/, nodes: []};
-                            instance._services[service_id].forEach(function(task) {
+                        for(var service in instance._services) {
+                            var org_service = {label: service/*+colors.gray(" service")*/, nodes: []};
+                            instance._services[service].forEach(function(task) {
                                 var status = common.color_status(task.status);
                                 var dates = "created at "+task.create_date;
                                 var deps = "";
@@ -207,6 +213,7 @@ function command_ls(options) {
     }
 }
 
+//deprecated by submit?
 function command_stage(instid, taskid, resourceid) {
     //submit noop request with dep set to the task to stage the taskid on resourceid
     request.post({
@@ -215,7 +222,7 @@ function command_stage(instid, taskid, resourceid) {
         body: {
             instance_id: instid,
             preferred_resource_id: resourceid, //resource id to run (this is suggestion, but score for noop for all resource should be 0)
-            service_id: 'sca-service-noop',
+            service: 'sca-service-noop',
             name: 'stage',
             //config: {}, //noop doesn't need any config
             deps: [taskid], //here is the most important bit..
@@ -227,5 +234,34 @@ function command_stage(instid, taskid, resourceid) {
             if(err) throw err;
             console.log("completed");
         });
+    }); 
+}
+
+function command_submit(instid, service, options) {
+    //submit noop request with dep set to the task to stage the taskid on resourceid
+    var taskconfig = JSON.parse(options.config);
+
+    request.post({
+        url: config.api.core+"/task",
+        json: true,
+        body: {
+            instance_id: instid,
+            service: service,
+            config: taskconfig,
+            //preferred_resource_id: resourceid, //resource id to run (this is suggestion, but score for noop for all resource should be 0)
+            //name: 'stage',
+            //config: {}, 
+            //deps: [taskid], //here is the most important bit..
+        },
+        headers: { 'Authorization': 'Bearer '+jwt }
+    }, function(err, res, body) {
+        if(err) throw err;
+        /*
+        common.wait_task(body.task, function(err) {
+            if(err) throw err;
+            console.log("completed");
+        });
+        */
+        console.log(JSON.stringify(body, null, 4));
     }); 
 }
