@@ -103,14 +103,16 @@ function action_create(dir, desc) {
             if(err) throw err;
             //TODO - handle a case where user doesn't have any hpss resource
             var best_resource = ret.resource;
-            console.log("best resource");
-            console.dir(best_resource);
+            console.log("resource chosen to handle hsi upload:"+best_resource.name);
+            //console.dir(best_resource);
 
             //create unique name
             var tgzname = Date.now()+".tar";//.gz";
+            var path = instance._id+"/_upload/"+tgzname;
+            console.log("uploading to "+path);
 
             // /resource/upload uses base64 encoded path
-            var path64 = new Buffer(instance._id+"/_upload/"+tgzname).toString('base64');
+            var path64 = new Buffer(path).toString('base64');
             var req = request.post({
                 url: config.api.core+"/resource/upload/"+best_resource._id+"/"+path64,
                 headers: auth_headers,

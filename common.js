@@ -80,22 +80,19 @@ exports.formatsize = function(bytes) {
 
 exports.wait_task = function(task, cb) {
     console.log("Please monitor progress at "+colors.cyan(config.progress_url+"#/detail/"+task.progress_key));
-    //console.dir(task);
     function check_status() {
-        //console.log(config.api.progress+"/status/"+task.progress_key);
         request.get({
             url: config.api.progress+"/status/"+task.progress_key,
             json: true,
         }, function(err, res, progress){
             if(err) throw err;
-            //console.dir(progress); 
             if(progress.status) {
                 var per = "";
                 if(progress.progress) per = " "+colors.gray(progress.progress*100+"%");
                 plog(exports.color_status(progress.status)+per+" "+progress.msg);
-                if(progress.status == "failed") cb("thawing failed");
+                if(progress.status == "failed") return cb(progress.msg);
                 if(progress.status == "finished") {
-                    console.log(""); //newline
+                    console.log(""); //newline (why?)
                     return cb();
                 }
             }
