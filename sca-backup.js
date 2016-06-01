@@ -98,11 +98,13 @@ function action_create(dir, desc) {
             url: config.api.core+"/resource/best", 
             json: true, 
             headers: auth_headers,
-            qs: {where: JSON.stringify({service_id: 'sca-service-hpss'})},
+            qs: {service: 'soichih/sca-service-hpss'},
         }, function(err, res, ret) {
             if(err) throw err;
             //TODO - handle a case where user doesn't have any hpss resource
             var best_resource = ret.resource;
+            console.log("best resource");
+            console.dir(best_resource);
 
             //create unique name
             var tgzname = Date.now()+".tar";//.gz";
@@ -119,7 +121,7 @@ function action_create(dir, desc) {
                     json: true,
                     body: {
                         instance_id: instance._id,
-                        service_id: 'sca-service-hpss',
+                        service: 'soichih/sca-service-hpss',
                         name: 'sca-backup',
                         desc: desc,
                         config: {
@@ -236,7 +238,7 @@ function action_restore(taskid) {
             if(body.length == 0) throw new Error("couldn't find the task:"+taskid);
             var task = body[0];
             var file = task.products[0].files[0];
-            console.log("requesting hpss-get on "+file.path+" ("+common.formatsize(file.size)+")");
+            console.log("requesting hpss-get on "+file.path+" ("+common.formatsize(file.size)+") desc:"+task.desc);
 
             //*thaw request*
             request.post({
@@ -244,7 +246,7 @@ function action_restore(taskid) {
                 json: true,
                 body: {
                     instance_id: instance._id,
-                    service_id: 'sca-service-hpss',
+                    service: 'soichih/sca-service-hpss',
                     name: 'sca-backup-thaw',
                     config: {
                         get: [

@@ -79,7 +79,7 @@ exports.formatsize = function(bytes) {
 }
 
 exports.wait_task = function(task, cb) {
-    console.log(colors.cyan(config.progress_url+"#/detail/"+task.progress_key));
+    console.log("Please monitor progress at "+colors.cyan(config.progress_url+"#/detail/"+task.progress_key));
     //console.dir(task);
     function check_status() {
         //console.log(config.api.progress+"/status/"+task.progress_key);
