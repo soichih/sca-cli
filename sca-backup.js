@@ -118,6 +118,11 @@ function action_create(dir, desc) {
                 headers: auth_headers,
             }, function(err, res, file) {
                 if(err) throw err;
+
+                //console.dir(res);
+                console.log("uploaded");
+                console.dir(JSON.stringify(file, null, 4));
+
                 request.post({
                     url: config.api.core+"/task",
                     json: true,
