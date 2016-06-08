@@ -76,6 +76,7 @@ function get_backup_instance(cb) {
                 headers: auth_headers,
             }, function(err, res, body) {
                 if(err) throw err;
+                if(res.statusCode != 200) throw new Error(body);
                 cb(null, body);
             });
         } else {
@@ -101,6 +102,7 @@ function action_create(dir, desc) {
             qs: {service: 'soichih/sca-service-hpss'},
         }, function(err, res, ret) {
             if(err) throw err;
+            if(res.statusCode != 200) throw new Error(ret);
             //TODO - handle a case where user doesn't have any hpss resource
             var best_resource = ret.resource;
             console.log("resource chosen to handle hsi upload:"+best_resource.name);
@@ -118,6 +120,7 @@ function action_create(dir, desc) {
                 headers: auth_headers,
             }, function(err, res, file) {
                 if(err) throw err;
+                if(res.statusCode != 200) throw new Error(file);
 
                 //console.dir(res);
                 console.log("uploaded");
@@ -155,6 +158,7 @@ function action_create(dir, desc) {
                     headers: auth_headers,
                 }, function(err, res, body) {
                     if(err) throw err;
+                    if(res.statusCode != 200) throw new Error(body);
                     console.log("Date uploaded and archiving.. (you can kill this script now)");
                     common.wait_task(body.task, function(err) {
                         if(err) throw err;
@@ -210,6 +214,7 @@ function action_ls(query, options) {
             qs: { where: JSON.stringify(where) }
         }, function(err, res, tasks) {
             if(err) return cb(err);
+            if(res.statusCode != 200) throw new Error(tasks);
             tasks.forEach(function(task) {
                 var status = common.color_status(common.pad(task.status, 15));
                 var taskid = colors.gray(task._id);
@@ -269,6 +274,7 @@ function action_restore(taskid) {
                 headers: auth_headers,
             }, function(err, res, body) {
                 if(err) throw err;
+                if(res.statusCode != 200) throw new Error(body);
                 //console.dir(body.message);
                 common.wait_task(body.task, function(err) {
                     if(err) throw err;

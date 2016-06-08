@@ -11,12 +11,6 @@ var plog = require('single-line-log').stdout;
 //mine
 var config = require('./config');
 
-/*
-String.prototype.pad= function (paddingValue) {
-   return String(paddingValue + this).slice(-paddingValue.length);
-};
-*/
-
 exports.pad = function(string, width, padding) { 
     //if(string === undefined) string = "";
     if(typeof string != String) string = new String(string);
@@ -79,7 +73,7 @@ exports.formatsize = function(bytes) {
 }
 
 exports.wait_task = function(task, cb) {
-    console.log("Please monitor progress at "+colors.cyan(config.progress_url+"#/detail/"+task.progress_key));
+    console.log("Monitor progress at "+colors.cyan(config.api.progress+"#/detail/"+task.progress_key));
     function check_status() {
         request.get({
             url: config.api.progress+"/status/"+task.progress_key,
