@@ -51,7 +51,7 @@ function dorequest() {
 
     //console.log(config.api.core);
     request.post({
-        url: config.api.auth+"/local/auth", 
+        url: config.api.auth+"/ldap/auth", 
         json: true,
         body: {username: program.username, password: program.password}
     }, function(err, res, body) {
