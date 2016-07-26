@@ -58,23 +58,25 @@ function get_backup_instance(cb) {
         url: config.api.core+"/instance", 
         json: true,
         headers: auth_headers,
-        qs: {where: JSON.stringify({workflow_id: 'sca-wf-backup'})},
+        qs: {find: JSON.stringify({workflow_id: 'sca-wf-backup'})},
     }, function(err, res, body) {
         if(err) return cb(err);
         if(res.statusCode != 200) return cb("failed to query for sca-wf-backup\n"+JSON.stringify(body));
-        if(body.length == 0) {
-            
+        var instances = body.instances;
+        if(instances.length == 0) {
             //user doesn't have sca-wf-backup yet. need to create one 
             request.post({
-                url: config.api.core+"/instance/sca-wf-backup", 
+                url: config.api.core+"/instance", 
                 json: true,
                 body: {
+                    workflow_id: "sca-wf-backup",
                     name: 'somename',
                     desc: 'somedesc',
                     config: {some:'thing'}
-                }, //freesurfer@karst to osgxd
+                }, 
                 headers: auth_headers,
             }, function(err, res, body) {
+                console.dir(body);
                 if(err) throw err;
                 if(res.statusCode != 200) throw new Error(body);
                 cb(null, body);
@@ -82,7 +84,7 @@ function get_backup_instance(cb) {
         } else {
             //return the first one for now..
             //TODO - if user has more than 1 sca-wf-backup, I should probably pick the latest one?
-            cb(null, body[0]); 
+            cb(null, instances[0]); 
         }
     });
 }
@@ -108,77 +110,77 @@ function action_create(dir, desc) {
             console.log("resource chosen to handle hsi upload:"+best_resource.name);
             //console.dir(best_resource);
 
-            //create unique name
-            var tgzname = Date.now()+".tar";//.gz";
-            var path = instance._id+"/_upload/"+tgzname;
-            console.log("uploading to "+path);
-
-            // /resource/upload uses base64 encoded path
-            var path64 = new Buffer(path).toString('base64');
-            var req = request.post({
-                url: config.api.core+"/resource/upload/"+best_resource._id+"/"+path64,
+            //load sda resource
+            request.get({
+                url: config.api.core+"/resource", 
+                json: true, 
                 headers: auth_headers,
-            }, function(err, res, file) {
-                if(err) throw err;
-                if(res.statusCode != 200) throw new Error(file);
+                qs: {find: JSON.stringify({type: "hpss"})},
+            }, function(err, res, data) {
+                console.dir(data);
 
-                //console.dir(res);
-                console.log("uploaded");
-                console.dir(JSON.stringify(file, null, 4));
+                if(data.length == 0) throw new Error("you don't have any hpss resource registered");
+                var hpss_resource = data[0];
 
-                request.post({
-                    url: config.api.core+"/task",
-                    json: true,
-                    body: {
-                        instance_id: instance._id,
-                        service: 'soichih/sca-service-hpss',
-                        name: 'sca-backup',
-                        desc: desc,
-                        config: {
-                            put: [
-                                {localpath:"../_upload/"+tgzname, hpsspath: config.backup.hpssdir+"/"+tgzname}
-                            ],
-                            auth: {
-                                //TODO - download resource list (and let user pick resource to use if there are multiple)
-                                username: "hayashis",
-                                keytab: "5682f80ae8a834a636dee418.keytab",
-                            },
+                //create unique name
+                var tgzname = Date.now()+".tar";//.gz";
+                var path = instance._id+"/_upload/"+tgzname;
+                console.log("uploading to "+path);
 
-                            //add a bit of extra info.. to help querying via backiup cli
-                            info: {
-                                hostname: os.hostname(),
-                                //platform: os.platform(), //bit redundant with os.type()
-                                release: os.release(),
-                                type: os.type(),
-                                path: process.cwd()+"/"+dir,
-                                files: fs.readdirSync(dir),
-                            }
-                        }
-                    },
+                // /resource/upload uses base64 encoded path
+                var path64 = new Buffer(path).toString('base64');
+                var req = request.post({
+                    url: config.api.core+"/resource/upload/"+best_resource._id+"/"+path64,
                     headers: auth_headers,
-                }, function(err, res, body) {
+                }, function(err, res, file) {
                     if(err) throw err;
-                    if(res.statusCode != 200) throw new Error(body);
-                    console.log("Date uploaded and archiving.. (you can kill this script now)");
-                    common.wait_task(body.task, function(err) {
+                    if(res.statusCode != 200) throw new Error(file);
+
+                    //console.dir(res);
+                    console.log("uploaded");
+                    console.dir(JSON.stringify(file, null, 4));
+
+                    request.post({
+                        url: config.api.core+"/task",
+                        json: true,
+                        body: {
+                            instance_id: instance._id,
+                            service: 'soichih/sca-service-hpss',
+                            name: 'sca-backup',
+                            desc: desc,
+                            config: {
+                                put: [
+                                    {localpath:"../_upload/"+tgzname, hpsspath: config.backup.hpssdir+"/"+tgzname}
+                                ],
+                                auth: {
+                                    username: hpss_resource.config.username,
+                                    keytab: hpss_resource._id+".keytab",
+                                },
+                                //add a bit of extra info.. to help querying via backiup cli
+                                info: {
+                                    hostname: os.hostname(),
+                                    //platform: os.platform(), //bit redundant with os.type()
+                                    release: os.release(),
+                                    type: os.type(),
+                                    path: process.cwd()+"/"+dir,
+                                    files: fs.readdirSync(dir),
+                                }
+                            }
+                        },
+                        headers: auth_headers,
+                    }, function(err, res, body) {
                         if(err) throw err;
-                        console.log("Archived! You can restore the content by running $ sca backup restore "+body.task._id);
-                    });
-                }); 
+                        if(res.statusCode != 200) throw new Error(body);
+                        console.log("Date uploaded and archiving.. (you can kill this script now)");
+                        common.wait_task(body.task, function(err) {
+                            if(err) throw err;
+                            console.log("Archived! You can restore the content by running $ sca backup restore "+body.task._id);
+                        });
+                    }); 
+                });
+                console.log("tarring and uploading to "+best_resource.name+" ...");
+                tar.pack(dir).pipe(req);
             });
-            
-            //now start streaming!
-            //console.log("uploading.. "+colors.gray("to resource:"+best_resource._id));
-            //console.log("best resource to run hpss: "+best_resource.name);
-            console.log("tarring and uploading to "+best_resource.name+" ...");
-            /*
-            //node-tar is 2x slower than tar-fs
-            fstream.Reader({path: dir, type: "Directory"})
-            .on('error', function(err) { throw(err); })
-            .pipe(tar.Pack()).pipe(req);
-            */
-            //gzipping is very cpu intenstive.. 
-            tar.pack(dir)/*.pipe(zlib.createGzip())*/.pipe(req);
         });
     });
 }

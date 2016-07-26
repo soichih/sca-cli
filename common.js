@@ -73,7 +73,7 @@ exports.formatsize = function(bytes) {
 }
 
 exports.wait_task = function(task, cb) {
-    console.log("Monitor progress at "+colors.cyan(config.api.progress+"#/detail/"+task.progress_key));
+    console.log("Monitor progress at "+colors.cyan(config.api.progress_url+"#/detail/"+task.progress_key));
     function check_status() {
         request.get({
             url: config.api.progress+"/status/"+task.progress_key,

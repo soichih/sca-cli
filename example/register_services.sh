@@ -18,6 +18,7 @@
 #../sca.js service register https://github.com/soichih/sca-service-helloworld2
 
 #../sca.js service register https://github.com/soichih/sca-service-neuro-tracking
-../sca.js service register https://github.com/soichih/life-1
+#../sca.js service register https://github.com/soichih/life-1
+../sca.js service register https://github.com/soichih/sca-product-neuro-b
 
 

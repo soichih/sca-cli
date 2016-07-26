@@ -10,6 +10,7 @@ exports.api = {
     core: exports.home_url+'/api/sca',       
     auth: exports.home_url+'/api/auth',       
     progress: exports.home_url+'/api/progress',       
+    progress_url: exports.home_url+'/progress',       
 }
 
 exports.path = {
